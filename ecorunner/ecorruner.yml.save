@@ -1,0 +1,60 @@
+version: "3.7"
+
+services:
+  wpecorunner:
+    image: wordpress:latest
+    volumes:
+      - wpecorunnerdata:/var/www/html
+#      - ./wp/data/.htaccess:/var/www/html/.htaccess
+    secrets:
+      - wordpress_db_host
+      - wordpress_db_user
+      - wordpress_db_name
+      - mysql_db_password
+    environment:
+      - WORDPRESS_DB_HOST_FILE=/run/secrets/wordpress_db_host
+      - WORDPRESS_DB_USER_FILE=/run/secrets/wordpress_db_user
+      - WORDPRESS_DB_NAME_FILE=/run/secrets/wordpress_db_name
+      - WORDPRESS_DB_PASSWORD_FILE=/run/secrets/mysql_db_password
+    networks:
+      - proxy-traefik
+    deploy:
+      mode: replicated
+      placement:
+       constraints:
+  #        - node.role == manager
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+#        - "traefik.http.routers.wpecorunner.rule=Host(`www.ecorunner.com.br ,ecorunner.com.br`)"
+        - "traefik.http.routers.wpecorunner.rule=Host(`ecorunner.com.br`) || Host(`www.ecorunner.com.br`)"
+        - "traefik.http.routers.wpecorunner.service=wpecorunner"
+        - "traefik.http.routers.wpecorunner.tls.certresolver=default"
+        - "traefik.http.routers.wpecorunner.entrypoints=web,websecure"
+        - "traefik.http.services.wpecorunner.loadbalancer.server.port=80"
+        - "traefik.http.routers.wpecorunner.middlewares=test-redirectregex@docker"
+
+secrets:
+  wordpress_db_host:
+    file: ./wp/wordpress_db_host.txt
+  wordpress_db_user:
+    file: ./wp/wordpress_db_user.txt
+  wordpress_db_name:
+    file: ./wp/wordpress_db_name.txt
+  mysql_db_password:
+    file: ./wp/mysql_db_password.txt
+
+networks:
+  proxy-traefik:
+    external: true
+
+volumes:
+  wpecorunnerdata:
+    name: wpecorunnerdata

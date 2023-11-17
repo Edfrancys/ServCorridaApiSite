@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  corridapl:
+
+    image: edfrancys/corridapl:v6
+
+    deploy:
+      mode: replicated
+      #placement:
+      #  constraints:
+      #    - node.role == manager
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.corridapl.rule=Host(`corredor.corridaparaluz.com.br`)"
+        - "traefik.http.routers.corridapl.service=corridapl"
+        - "traefik.http.routers.corridapl.tls.certresolver=default"
+        - "traefik.http.routers.corridapl.entrypoints=web,websecure"
+        - "traefik.http.services.corridapl.loadbalancer.server.port=3000"
+        - "traefik.http.routers.corridapl.middlewares=test-redirectregex@docker"
+
+
+    networks:
+      - proxy-traefik
+
+networks:
+  proxy-traefik:
+    external: true

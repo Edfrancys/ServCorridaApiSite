@@ -1,0 +1,58 @@
+version: "3.7"
+
+services:
+  wpirmaogesso:
+    image: wordpress:latest
+    volumes:
+      - wpirmaodata:/var/www/html/wp-content
+#      - ./wp/data/.htaccess:/var/www/html/.htaccess
+    secrets:
+      - wordpress_db_host
+      - wordpress_db_user
+      - wordpress_db_name
+      - mysql_db_password
+    environment:
+      - WORDPRESS_DB_HOST_FILE=/run/secrets/wordpress_db_host
+      - WORDPRESS_DB_USER_FILE=/run/secrets/wordpress_db_user
+      - WORDPRESS_DB_NAME_FILE=/run/secrets/wordpress_db_name
+      - WORDPRESS_DB_PASSWORD_FILE=/run/secrets/mysql_db_password
+    networks:
+      - proxy-traefik
+    deploy:
+      mode: replicated
+#      placement:
+ #       constraints:
+  #        - node.role == manager
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.wpirmaogesso.rule=Host(`irmaodogesso.com.br`)"
+        - "traefik.http.routers.wpirmaogesso.service=wpirmaogesso"
+        - "traefik.http.routers.wpirmaogesso.tls.certresolver=default"
+        - "traefik.http.routers.wpirmaogesso.entrypoints=web,websecure"
+        - "traefik.http.services.wpirmaogesso.loadbalancer.server.port=80"
+
+secrets:
+  wordpress_db_host:
+    file: ./wp/wordpress_db_host.txt
+  wordpress_db_user:
+    file: ./wp/wordpress_db_user.txt
+  wordpress_db_name:
+    file: ./wp/wordpress_db_name.txt
+  mysql_db_password:
+    file: ./wp/mysql_db_password.txt
+
+networks:
+  proxy-traefik:
+    external: true
+
+volumes:
+  wpirmaodata:
+    name: wpirmaodata

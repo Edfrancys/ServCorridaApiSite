@@ -1,0 +1,33 @@
+
+version: '3'
+
+services:
+  ecorunlumenbk:
+
+    image: edfrancys/ecorunback:v1
+
+    deploy:
+      mode: replicated
+      #placement:
+      #  constraints:
+      #    - node.role == manager
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.ecorunlumenbk.rule=Host(`api.ecorunner.com.br`)"
+        - "traefik.http.routers.ecorunlumenbk.service=ecorunlumenbk"
+        - "traefik.http.routers.ecorunlumenbk.tls.certresolver=default"
+        - "traefik.http.routers.ecorunlumenbk.entrypoints=web,websecure"
+        - "traefik.http.services.ecorunlumenbk.loadbalancer.server.port=8000"
+    command: php -S 0.0.0.0:8000 -t public
+
+    networks:
+      - proxy-traefik
+
+networks:
+  proxy-traefik:
+    external: true

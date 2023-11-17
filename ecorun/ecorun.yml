@@ -1,0 +1,34 @@
+
+version: '3'
+
+services:
+  ecorun:
+
+    image: edfrancys/ecorun23:v1.2
+
+    deploy:
+      mode: replicated
+      #placement:
+      #  constraints:
+      #    - node.role == manager
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.ecorun.rule=Host(`corredor.ecorunner.com.br`) || Host(`www.corredor.ecorunner.com.br`)"
+        - "traefik.http.routers.ecorun.service=ecorun"
+        - "traefik.http.routers.ecorun.tls.certresolver=default"
+        - "traefik.http.routers.ecorun.entrypoints=web,websecure"
+        - "traefik.http.services.ecorun.loadbalancer.server.port=3000"
+        - "traefik.http.routers.ecorun.middlewares=test-redirectregex@docker"
+
+
+    networks:
+      - proxy-traefik
+
+networks:
+  proxy-traefik:
+    external: true

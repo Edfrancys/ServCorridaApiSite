@@ -1,0 +1,74 @@
+version: "3.7"
+
+services:
+  traefik:
+    image: traefik:v2.2
+    command:
+      - --api=true
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.swarmMode=true
+      - --providers.docker.network=http
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.default.acme.email=contato@vejartes.com.br
+      - --certificatesresolvers.default.acme.storage=/certificates/acme.json
+      - --certificatesresolvers.default.acme.tlschallenge=true
+      - --accesslog     
+      - --log      
+      #- --api
+    ports:
+      - 80:80
+      - 443:443
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        # Dashboard
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.ecorunner.com.br`)"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.routers.traefik.tls.certresolver=default"
+        #- "traefik.http.routers.traefik.entrypoints=web,websecure"
+        #- "traefik.http.routers.traefik.middlewares=authtraefik"
+        #- "traefik.http.middlewares.authtraefik.basicauth.users=admin:${HASHED_PASSWORD?Variable not set}"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+        # global redirect to https
+        - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+        - "traefik.http.routers.http-catchall.entrypoints=web"
+        - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+        
+        # middleware redirect
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+        #middleaew regex
+        #- "traefik.http.middlewares.test-replacepathregex.replacepathregex.regex=^https?://www\\.(.+)"
+        #- "traefik.http.middlewares.test-replacepathregex.replacepathregex.replacement=https://${1}"
+
+        - "traefik.http.middlewares.test-redirectregex.redirectregex.regex=^https?://www\\.(.+)"
+        - "traefik.http.middlewares.test-redirectregex.redirectregex.replacement=https://$${1}"
+        - "traefik.http.middlewares.test-redirectregex.redirectregex.permanent=true"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik-certificates:/certificates
+    networks:
+      - proxy-traefik
+
+volumes:
+  traefik-certificates:
+
+networks:
+  proxy-traefik:
+    external: true
+

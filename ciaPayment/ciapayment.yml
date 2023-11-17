@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  ciapayment:
+
+    image: edfrancys/cia-payment:latest
+
+    deploy:
+      mode: replicated
+      #placement:
+      #  constraints:
+      #    - node.role == manager
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.ciapayment.rule=Host(`pay.vejartes.com.br`)"
+        - "traefik.http.routers.ciapayment.service=ciapayment"
+        - "traefik.http.routers.ciapayment.tls.certresolver=default"
+        - "traefik.http.routers.ciapayment.entrypoints=web,websecure"
+        - "traefik.http.services.ciapayment.loadbalancer.server.port=3000"
+
+
+    networks:
+      - proxy-traefik
+
+networks:
+  proxy-traefik:
+    external: true

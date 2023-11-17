@@ -1,0 +1,33 @@
+
+version: '3'
+
+services:
+  vejartescvd:
+
+    image: edfrancys/cvdigital:vejartes
+
+    deploy:
+      mode: replicated
+      #placement:
+      #  constraints:
+      #    - node.role == manager
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        # App-labbels
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy-traefik"
+        - "traefik.http.routers.vejartescvd.rule=Host(`vejartes.cvdigital.net.br`)"
+        - "traefik.http.routers.vejartescvd.service=vejartescvd"
+        - "traefik.http.routers.vejartescvd.tls.certresolver=default"
+        - "traefik.http.routers.vejartescvd.entrypoints=web,websecure"
+        - "traefik.http.services.vejartescvd.loadbalancer.server.port=3000"
+
+
+    networks:
+      - proxy-traefik
+
+networks:
+  proxy-traefik:
+    external: true
